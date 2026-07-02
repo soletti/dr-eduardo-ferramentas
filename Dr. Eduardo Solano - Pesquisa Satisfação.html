@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Como foi seu atendimento? — Dr. Eduardo Solano</title>
+<style>
+  /* ============================================================
+     Mobile-first de propósito: quem preenche é o PACIENTE, no
+     próprio celular, logo depois (ou durante a espera) de um
+     atendimento no PS — telas grandes de toque, texto mínimo,
+     zero scroll horizontal, sem depender de mouse/hover.
+     ============================================================ */
+  :root{
+    --dark:#1e293b; --mid:#64748b; --light:#94a3b8; --border:#e2e8f0;
+    --bg-card:#f8fafc; --white:#fff;
+    --accent:#2563eb; --accent2:#06b6d4; --accent-bg:#eff6ff;
+    --green:#22c55e; --yellow:#f59e0b; --red:#ef4444;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;color:var(--dark);
+    background:linear-gradient(180deg,#eff6ff 0%,#f5f3ff 45%,#fdf4ff 100%); /* fundo com leve gradiente — "chamativo" sem atrapalhar leitura */
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    min-height:100vh;
+  }
+  .page{
+    max-width:480px;margin:0 auto;
+    padding:16px 14px calc(40px + env(safe-area-inset-bottom)); /* respeita a barra inferior de iPhones com notch */
+  }
+  .sheet{background:var(--white);border-radius:24px;padding:0 0 22px;
+    box-shadow:0 8px 30px rgba(37,99,235,.12);overflow:hidden;}
+
+  /* cabeçalho em gradiente — primeira coisa que o paciente vê, precisa chamar atenção */
+  .header{
+    background:linear-gradient(135deg,var(--accent) 0%,var(--accent2) 100%);
+    padding:26px 20px 22px;text-align:center;color:#fff;margin-bottom:20px;
+    border-radius:24px 24px 0 0;
+  }
+  .header-emoji{font-size:38px;margin-bottom:6px;filter:drop-shadow(0 2px 4px rgba(0,0,0,.15));}
+  .header h1{font-size:20px;margin:0 0 4px;font-weight:800;}
+  .header p{font-size:12.5px;color:rgba(255,255,255,.85);margin:0;}
+
+  .body-pad{padding:0 20px;}
+
+  /* espaçamento entre perguntas otimizado: menos "ar" entre blocos, mais dentro de cada um */
+  .question{margin-bottom:20px;}
+  .question label{display:block;font-size:14.5px;font-weight:700;margin-bottom:10px;line-height:1.35;}
+  .question .sub{font-size:12px;color:var(--light);font-weight:400;margin-top:-6px;margin-bottom:10px;}
+
+  /* escala NPS 0-10 em duas linhas SEPARADAS (6 + 5) — cada linha ocupa 100% da
+     largura por conta própria, sem célula vazia sobrando (otimização de espaço) */
+  .nps-rows{display:flex;flex-direction:column;gap:6px;}
+  .nps-row-6{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
+  .nps-row-5{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+  .nps-btn{
+    aspect-ratio:1;min-height:40px;border:1.5px solid var(--border);border-radius:10px;
+    background:var(--white);font-size:14.5px;font-weight:800;color:var(--mid);cursor:pointer;
+    transition:.15s;
+  }
+  /* cor do próprio número já indica a "zona" (vermelho/amarelo/verde) — reforça
+     visualmente o significado antes mesmo de tocar, e fica mais "chamativo" */
+  .nps-btn.zona-baixa{border-color:#fecaca;color:#dc2626;}
+  .nps-btn.zona-media{border-color:#fde68a;color:#b45309;}
+  .nps-btn.zona-alta{border-color:#bbf7d0;color:#15803d;}
+  .nps-btn.selected.zona-baixa{background:var(--red);border-color:var(--red);color:#fff;transform:scale(1.08);}
+  .nps-btn.selected.zona-media{background:var(--yellow);border-color:var(--yellow);color:#fff;transform:scale(1.08);}
+  .nps-btn.selected.zona-alta{background:var(--green);border-color:var(--green);color:#fff;transform:scale(1.08);}
+  .nps-labels{display:flex;justify-content:space-between;font-size:10.5px;color:var(--light);margin-top:8px;}
+
+  /* opções de escolha única — cards grandes, um por linha (fácil de acertar com o polegar) */
+  .choice-list{display:flex;flex-direction:column;gap:8px;}
+  .choice-btn{
+    display:flex;align-items:center;gap:10px;width:100%;text-align:left;
+    min-height:48px; /* alvo de toque confortável */
+    padding:12px 14px;border:1.5px solid var(--border);border-radius:14px;background:var(--white);
+    font-size:14px;color:var(--dark);cursor:pointer;transition:.15s;font-family:inherit;
+  }
+  .choice-btn .emoji{font-size:20px;}
+  .choice-btn.selected{
+    border-color:var(--accent);background:var(--accent-bg);font-weight:700;
+    box-shadow:0 2px 8px rgba(37,99,235,.15);transform:scale(1.01);
+  }
+
+  textarea.comment{width:100%;min-height:64px;border:1.5px solid var(--border);border-radius:14px;
+    padding:12px;font-size:14px;font-family:inherit;resize:vertical;color:var(--dark);}
+  textarea.comment:focus{outline:none;border-color:var(--accent);}
+  textarea.comment::placeholder{color:var(--light);}
+
+  /* cartão de convite pro acompanhamento — só existe/aparece em modo particular;
+     gradiente próprio pra se destacar como algo "especial", não mais uma pergunta */
+  .invite-card{
+    background:linear-gradient(160deg,#eff6ff,#f0fdfa);border:1.5px solid #a5d8ff;
+    border-radius:18px;padding:18px;margin-bottom:22px;
+    box-shadow:0 4px 14px rgba(6,182,212,.12);
+  }
+  .invite-card h2{font-size:15.5px;margin:0 0 6px;font-weight:800;}
+  .invite-card p{font-size:13px;color:var(--mid);line-height:1.5;margin:0 0 14px;}
+  .invite-choices{display:flex;gap:8px;}
+  .invite-choices button{flex:1;min-height:46px;padding:10px;border-radius:12px;font-size:13.5px;font-weight:700;
+    cursor:pointer;font-family:inherit;border:1.5px solid var(--border);background:#fff;color:var(--mid);}
+  .invite-choices button.selected{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+  .submit-btn{
+    width:100%;min-height:52px;padding:15px;border:none;border-radius:16px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    color:#fff;font-size:15.5px;font-weight:800;cursor:pointer;margin-top:4px;
+    box-shadow:0 6px 16px rgba(37,99,235,.3);
+  }
+  .submit-btn:active{transform:scale(.98);}
+  .submit-btn:disabled{background:var(--border);color:var(--light);box-shadow:none;}
+
+  .footer-note{text-align:center;font-size:11px;color:var(--light);margin-top:14px;line-height:1.5;}
+
+  /* tela de agradecimento pós-envio */
+  .thanks{display:none;text-align:center;padding:36px 20px;}
+  .thanks .big-emoji{font-size:54px;margin-bottom:10px;}
+  .thanks h2{font-size:19px;margin:0 0 8px;}
+  .thanks p{font-size:13.5px;color:var(--mid);line-height:1.5;}
+
+  /* telas bem estreitas (≤360px) — aperta ainda mais o respiro sem perder toque confortável */
+  @media (max-width:360px){
+    .page{padding:10px 8px calc(40px + env(safe-area-inset-bottom));}
+    .body-pad{padding:0 14px;}
+    .question{margin-bottom:16px;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="sheet" id="form-sheet">
+
+    <div class="header">
+      <div class="header-emoji">👋</div>
+      <h1>Como foi seu atendimento?</h1>
+      <p>Dr. Eduardo Solano — leva menos de 1 minuto</p>
+    </div>
+
+    <div class="body-pad">
+
+    <div class="question">
+      <label>De 0 a 10, o quanto você recomendaria esse atendimento?</label>
+      <div class="nps-rows">
+        <div class="nps-row-6" id="nps-row-6"></div>
+        <div class="nps-row-5" id="nps-row-5"></div>
+      </div>
+      <div class="nps-labels"><span>Não recomendaria</span><span>Recomendaria muito</span></div>
+    </div>
+
+    <div class="question">
+      <label>O médico explicou tudo de forma clara?</label>
+      <div class="choice-list" id="clareza-row"></div>
+    </div>
+
+    <div class="question">
+      <label>Como você se sentiu tratado(a)?</label>
+      <div class="choice-list" id="acolhimento-row"></div>
+    </div>
+
+    <div class="question">
+      <label>Você faria outra consulta com o Dr. Eduardo?</label>
+      <div class="choice-list" id="retorno-row"></div>
+    </div>
+
+    <div class="question">
+      <label>Você recomendaria o Dr. Eduardo para outras pessoas?</label>
+      <div class="choice-list" id="recomenda-row"></div>
+    </div>
+
+    <div class="question">
+      <label>Quer deixar algum comentário? <span class="sub">(opcional)</span></label>
+      <textarea class="comment" id="comentario" placeholder="Conta pra gente..."></textarea>
+    </div>
+
+    <div class="invite-card" id="invite-card" style="display:none">
+      <h2>Quer continuar sendo cuidado(a)?</h2>
+      <p>Além de emergências, o Dr. Eduardo também faz acompanhamento contínuo de saúde — física e mental. Se fizer sentido pra você, dá pra saber mais sem compromisso.</p>
+      <div class="invite-choices" id="invite-choices">
+        <button type="button" data-value="sim">Quero saber mais</button>
+        <button type="button" data-value="nao">Agora não</button>
+      </div>
+    </div>
+
+    <button class="submit-btn" id="submit-btn" disabled onclick="enviarPesquisa()">Enviar resposta</button>
+    <p class="footer-note">Suas respostas ajudam o Dr. Eduardo a melhorar o atendimento.<br>Isso não substitui nenhuma orientação médica recebida hoje.</p>
+    </div>
+  </div>
+
+  <div class="sheet thanks" id="thanks-sheet">
+    <div class="big-emoji">💙</div>
+    <h2>Obrigado pelo retorno!</h2>
+    <p id="thanks-text">Sua opinião foi enviada. Melhoras!</p>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   MODO SUS x PARTICULAR — decide, no carregamento da página, se o convite
+   pro acompanhamento aparece. Lido só da URL (?modo=particular), nunca de
+   um botão visível pro paciente — evita qualquer chance de esse convite
+   aparecer num contexto de plantão público (Art. 64 do Código de Ética
+   Médica veda captar, pra clínica particular, paciente atendido pelo SUS).
+   Gerar 2 links/QR codes fixos, um por contexto:
+     ...pesquisa_satisfacao_ps.html               -> modo SUS (padrão, seguro)
+     ...pesquisa_satisfacao_ps.html?modo=particular -> mostra o convite
+   ============================================================================ */
+const params = new URLSearchParams(window.location.search);
+const modoParticular = params.get('modo') === 'particular';
+if (modoParticular) {
+  document.getElementById('invite-card').style.display = 'block';
+}
+
+/* ── estado das respostas ── */
+const respostas = { nps: null, clareza: null, acolhimento: null, retorno: null, recomenda: null, convite: null };
+
+function renderNps() {
+  const row6 = document.getElementById('nps-row-6');
+  const row5 = document.getElementById('nps-row-5');
+  for (let i = 0; i <= 10; i++) {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.textContent = i;
+    // zona de cor já visível no botão antes mesmo de tocar (reforça o significado do número)
+    const zona = i <= 3 ? 'zona-baixa' : i <= 6 ? 'zona-media' : 'zona-alta';
+    btn.className = 'nps-btn ' + zona;
+    btn.onclick = () => {
+      respostas.nps = i;
+      // limpa seleção nas DUAS linhas — o botão anterior pode estar na outra
+      [...row6.children, ...row5.children].forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      checarCompleto();
+    };
+    (i < 6 ? row6 : row5).appendChild(btn);
+  }
+}
+
+function renderChoices(rowId, campo, opcoes) {
+  const row = document.getElementById(rowId);
+  opcoes.forEach(([valor, texto, emoji]) => {
+    const btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="emoji">${emoji}</span><span>${texto}</span>`;
+    btn.onclick = () => { respostas[campo] = valor; marcarSelecionado(row, btn); checarCompleto(); };
+    row.appendChild(btn);
+  });
+}
+
+function marcarSelecionado(container, btnAtivo) {
+  container.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+  btnAtivo.classList.add('selected');
+}
+
+// Só libera o botão de enviar quando as 4 perguntas obrigatórias (não o comentário,
+// não o convite) estiverem respondidas — evita respostas parciais inúteis.
+function checarCompleto() {
+  const completo = respostas.nps !== null && respostas.clareza
+    && respostas.acolhimento && respostas.retorno && respostas.recomenda;
+  document.getElementById('submit-btn').disabled = !completo;
+}
+
+renderNps();
+renderChoices('clareza-row', 'clareza', [
+  ['sim', 'Sim, totalmente', '✅'], ['parcial', 'Em parte', '🤔'], ['nao', 'Não muito', '❌'],
+]);
+renderChoices('acolhimento-row', 'acolhimento', [
+  ['otimo', 'Muito bem tratado(a)', '😄'], ['bom', 'Bem tratado(a)', '🙂'], ['ruim', 'Podia ser melhor', '😞'],
+]);
+renderChoices('retorno-row', 'retorno', [
+  ['sim', 'Sim, com certeza', '✅'], ['talvez', 'Talvez', '🤔'], ['nao', 'Não', '❌'],
+]);
+renderChoices('recomenda-row', 'recomenda', [
+  ['sim', 'Sim, recomendaria', '✅'], ['talvez', 'Talvez', '🤔'], ['nao', 'Não', '❌'],
+]);
+
+if (modoParticular) {
+  document.querySelectorAll('#invite-choices button').forEach(btn => {
+    btn.onclick = () => {
+      respostas.convite = btn.dataset.value;
+      marcarSelecionado(document.getElementById('invite-choices'), btn);
+    };
+  });
+}
+
+/* ── envio: monta uma mensagem de WhatsApp pré-formatada, sem precisar de backend ── */
+function enviarPesquisa() {
+  const legenda = { sim:'Sim', parcial:'Em parte', nao:'Não', talvez:'Talvez',
+    otimo:'Muito bem tratado(a)', bom:'Bem tratado(a)', ruim:'Podia ser melhor' };
+  const comentario = document.getElementById('comentario').value.trim();
+
+  let msg = `📋 *Pesquisa de satisfação — PS*\n\n`;
+  msg += `Nota (0-10): *${respostas.nps}*\n`;
+  msg += `Clareza da explicação: ${legenda[respostas.clareza]}\n`;
+  msg += `Acolhimento: ${legenda[respostas.acolhimento]}\n`;
+  msg += `Faria outra consulta: *${legenda[respostas.retorno]}*\n`;
+  msg += `Recomendaria: *${legenda[respostas.recomenda]}*\n`;
+  if (comentario) msg += `Comentário: ${comentario}\n`;
+  if (modoParticular && respostas.convite === 'sim') {
+    msg += `\n💙 *Tenho interesse em saber mais sobre o acompanhamento contínuo.*`;
+  }
+
+  // Número do Dr. Eduardo precisa ser preenchido (formato: 55DDDNÚMERO, só dígitos)
+  const numeroWhatsapp = ''; // TODO: preencher com o número real antes de publicar
+  const url = numeroWhatsapp
+    ? `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(msg)}`
+    : `https://wa.me/?text=${encodeURIComponent(msg)}`; // sem número fixo: paciente escolhe o contato
+  window.open(url, '_blank');
+
+  document.getElementById('form-sheet').style.display = 'none';
+  document.getElementById('thanks-sheet').style.display = 'block';
+  if (modoParticular && respostas.convite === 'sim') {
+    document.getElementById('thanks-text').textContent =
+      'Sua opinião foi enviada e o Dr. Eduardo vai entrar em contato sobre o acompanhamento. Melhoras!';
+  }
+}
+</script>
+</body>
+</html>
