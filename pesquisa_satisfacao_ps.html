@@ -299,7 +299,7 @@ function enviarPesquisa() {
   }
 
   // Número do Dr. Eduardo precisa ser preenchido (formato: 55DDDNÚMERO, só dígitos)
-  const numeroWhatsapp = ''; // TODO: preencher com o número real antes de publicar
+  const numeroWhatsapp = '5565996845678'; // TESTE — trocar pelo número profissional do Dr. Eduardo
   const url = numeroWhatsapp
     ? `https://wa.me/${numeroWhatsapp}?text=${encodeURIComponent(msg)}`
     : `https://wa.me/?text=${encodeURIComponent(msg)}`; // sem número fixo: paciente escolhe o contato
